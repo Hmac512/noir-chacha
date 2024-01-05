@@ -1,189 +1,44 @@
-use dep::std::collections::vec::Vec;
+mod ChaCha20;
 
-struct ChaChaState {
-    a: [u32;4],
-    b: [u32;4],
-    c: [u32;4],
-    d: [u32;4],
-}
+use dep::std;
 
-struct ChaCha20 {
-    state: ChaChaState,
-    output: [u8; 64],
-    offset: u32,
-}
+pub fn main(key: [u8;32], nonce: [u8;12], _plaintext: pub [u8;128]) -> pub [u8;128] {
+    let mut plaintext:[u8] = [0; 128];
 
-fn main() {}
-
-pub fn read_u32_le(input: &mut [u8]) -> u32 {
-    assert(input.len() == 4);
-    // unsafe {
-    //     let mut tmp = mem::MaybeUninit::uninit();
-    //     ptr::copy_nonoverlapping(input.get_unchecked(0), tmp.as_mut_ptr() as *mut u8, 4);
-    //     u32::from_le(tmp.assume_init())
-    // }
-    4
-}
-
-pub fn rotl(x: u32, b: u32) -> u32 {
-    (x << b) | (x >> (32 - b))
-}
-
-// pub fn round(state: &mut ChaChaState) {
-// state.a = state.a + state.b;
-// }
-
-// ($state: expr) => {{
-//         $state.a = $state.a + $state.b;
-//         rotate!($state.d, $state.a, S16);
-//         $state.c = $state.c + $state.d;
-//         rotate!($state.b, $state.c, S12);
-//         $state.a = $state.a + $state.b;
-//         rotate!($state.d, $state.a, S8);
-//         $state.c = $state.c + $state.d;
-//         rotate!($state.b, $state.c, S7);
-//     }}
-
-impl ChaCha20 {
-
-    pub fn new(key: &mut [u8], nonce: &mut [u8]) -> ChaCha20 {
-        assert((key.len() == 16) | (key.len() == 32));
-        assert((nonce.len() == 8) | (nonce.len() == 12));
-
-        ChaCha20 {
-            state: ChaChaState { a: [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574], b: [0; 4], c: [0; 4], d: [0; 4] },
-            output: [0; 64],
-            offset: 64
-        }
+    for i in 0.._plaintext.len() {
+        plaintext[i] = _plaintext[i];
     }
 
+    let mut output:[u8;128] = [0; 128];
 
+    ChaCha20::ChaCha20XOR(key, 0, nonce, &mut plaintext, &mut output);
 
-    pub fn new_xchacha20(key: &mut [u8], nonce: &mut [u8]) -> ChaCha20 {
-            assert(key.len() == 32);
-            assert(nonce.len() == 24);
+    output
+}
 
+#[test]
+fn test_main() {
+    let key  = [
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+    ];
 
-            let mut subNonce1:[u8] = [0; 16];
+    let nonce = [0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x4a, 0x00, 0x00, 0x00, 0x00];
 
-            for i in 0..16 {
-                subNonce1[i] = nonce[i];
-            };
+    let plaintext = [
+        0x4c, 0x61, 0x64, 0x69, 0x65, 0x73, 0x20, 0x61, 0x6e, 0x64, 0x20, 0x47, 0x65, 0x6e, 0x74, 0x6c, 0x65, 0x6d, 0x65, 0x6e, 0x20, 0x6f, 0x66, 0x20, 0x74, 0x68, 0x65, 0x20, 0x63, 0x6c, 0x61, 0x73, 0x73, 0x20, 0x6f, 0x66, 0x20, 0x27, 0x39, 0x39, 0x3a, 0x20, 0x49, 0x66, 0x20, 0x49, 0x20, 0x63, 0x6f, 0x75, 0x6c, 0x64, 0x20, 0x6f, 0x66, 0x66, 0x65, 0x72, 0x20, 0x79, 0x6f, 0x75, 0x20, 0x6f, 0x6e, 0x6c, 0x79, 0x20, 0x6f, 0x6e, 0x65, 0x20, 0x74, 0x69, 0x70, 0x20, 0x66, 0x6f, 0x72, 0x20, 0x74, 0x68, 0x65, 0x20, 0x66, 0x75, 0x74, 0x75, 0x72, 0x65, 0x2c, 0x20, 0x73, 0x75, 0x6e, 0x73, 0x63, 0x72, 0x65, 0x65, 0x6e, 0x20, 0x77, 0x6f, 0x75, 0x6c, 0x64, 0x20, 0x62, 0x65, 0x20, 0x69, 0x74, 0x2e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    ];
 
+    let mut _encrypt = main(key, nonce, plaintext);
 
+    let mut encrypt:[u8;128] = [0; 128];
 
-            // HChaCha20 produces a 256-bit output block starting from a 512 bit
-            // input block where (x0,x1,...,x15) where
-            //
-            //  * (x0, x1, x2, x3) is the ChaCha20 constant.
-            //  * (x4, x5, ... x11) is a 256 bit key.
-            //  * (x12, x13, x14, x15) is a 128 bit nonce.
-            let mut xchacha20 = ChaCha20 {
-                state: ChaCha20::expand(key, &mut subNonce1),
-                output: [0; 64],
-                offset: 64,
-            };
-
-            // Use HChaCha to derive the subkey, and initialize a ChaCha20 instance
-            // with the subkey and the remaining 8 bytes of the nonce.
-            let mut new_key = [0; 32];
-            let mut subNonce2:[u8] = [0; 8];
-            for i in 16..24 {
-                subNonce2[i] = nonce[i];
-            };
-            // xchacha20.hchacha20(&mut new_key);
-            xchacha20.state = ChaCha20::expand(&mut new_key, &mut subNonce2);
-
-            xchacha20
-        }
-
-    fn expand(key: &mut [u8], nonce: &mut [u8]) -> ChaChaState {
-        let constant = [101, 120, 112, 97, 110, 100, 32, 51, 50, 45, 98, 121, 116, 101, 32, 107];
-        ChaChaState {
-            a: [
-                read_u32_le(&mut [constant[0], constant[1], constant[2], constant[3]]),
-                read_u32_le(&mut [constant[4], constant[5], constant[6], constant[7]]),
-                read_u32_le(&mut [constant[8], constant[9], constant[10], constant[11]]),
-                read_u32_le(&mut [constant[12], constant[13], constant[14], constant[15]])
-            ],
-            b: [
-                read_u32_le(&mut [key[0], key[1], key[2], key[3]]),
-                read_u32_le(&mut [key[4], key[5], key[6], key[7]]),
-                read_u32_le(&mut [key[8], key[9], key[10], key[11]]),
-                read_u32_le(&mut [key[12], key[13], key[14], key[15]])
-            ],
-            c: [
-                read_u32_le(&mut [key[16], key[17], key[18], key[19]]),
-                read_u32_le(&mut [key[20], key[21], key[22], key[23]]),
-                read_u32_le(&mut [key[24], key[25], key[26], key[27]]),
-                read_u32_le(&mut [key[28], key[29], key[30], key[31]])
-            ],
-            d: [
-                read_u32_le(&mut [nonce[0], nonce[1], nonce[2], nonce[3]]),
-                read_u32_le(&mut [nonce[4], nonce[5], nonce[6], nonce[7]]),
-                read_u32_le(&mut [nonce[8], nonce[9], nonce[10], nonce[11]]),
-                read_u32_le(&mut [nonce[12], nonce[13], nonce[14], nonce[15]])
-            ]
-        }
+    for i in 0..128 {
+        encrypt[i] = _encrypt[i];
     }
 
-    fn half_round(output: &mut [u32;4], a:u32,b:u32,c:u32,d:u32) {
+    let decrypt = main(key, nonce, encrypt);
 
-        //    output[d] = this._rotl(output[d] ^ (output[a] += output[b]), 16)
-        // output.d =
-
-
-
+    for i in 0..128 {
+        assert(decrypt[i] == plaintext[i]);
     }
-
-
-
-   fn hchacha20(&mut self, out: &mut [u8]) -> () {
-
-
-        // Apply r/2 iterations of the same "double-round" function,
-        // obtaining (z0, z1, ... z15) = doubleround r/2 (x0, x1, ... x15).
-
-
-        let mix = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        let i = 0;
-        let b = 0;
-
-
-        for _ in 0..10 {
-
-      //  self.half_round(self.state.a[0], self.state.b[0], self.state.c[0], self.state.d[0]);
-
-
-
-        //     round(state);
-        //     let u32x4(b10, b11, b12, b13) = state.b;
-        //     state.b = u32x4(b11, b12, b13, b10);
-        //     let u32x4(c10, c11, c12, c13) = state.c;
-        //     state.c = u32x4(c12, c13, c10, c11);
-        //     let u32x4(d10, d11, d12, d13) = state.d;
-        //     state.d = u32x4(d13, d10, d11, d12);
-        //     round!(state);
-        //     let u32x4(b20, b21, b22, b23) = state.b;
-        //     state.b = u32x4(b23, b20, b21, b22);
-        //     let u32x4(c20, c21, c22, c23) = state.c;
-        //     state.c = u32x4(c22, c23, c20, c21);
-        //     let u32x4(d20, d21, d22, d23) = state.d;
-        //     state.d = u32x4(d21, d22, d23, d20);
-        }
-
-        // // HChaCha20 then outputs the 256-bit block (z0, z1, z2, z3, z12, z13,
-        // // z14, z15).  These correspond to the constant and input positions in
-        // // the ChaCha matrix.
-        // let u32x4(a1, a2, a3, a4) = state.a;
-        // let u32x4(d1, d2, d3, d4) = state.d;
-        // let lens = [a1, a2, a3, a4, d1, d2, d3, d4];
-        // for i in 0..lens.len() {
-        //     write_u32_le(&mut out[i * 4..(i + 1) * 4], lens[i]);
-        // }
-    }
-
-
-
-
 }
