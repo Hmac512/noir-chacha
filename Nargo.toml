@@ -1,5 +1,5 @@
 [package]
-name = "hello_world"
+name = "noir_chacha"
 type = "bin"
 authors = [""]
 compiler_version = ">=0.19.4"
