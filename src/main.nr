@@ -1,15 +1,17 @@
-mod ChaChaStruct;
-
+mod ChaCha20Rng;
+mod ChaCha20;
+mod ChaCha20Encoder;
 use dep::std;
 
-pub fn main(key: [u8;32], nonce: [u8;12], plaintext: pub [u8;128]) {
-    let mut encoder = ChaChaStruct::ChaChaCipher::new(key, 0, nonce);
-    let encrypted = encoder.update(plaintext);
+use ChaCha20Encoder::ChaChaEncoder;
 
-    let mut decoder = ChaChaStruct::ChaChaCipher::new(key, 0, nonce);
-    let decrypted = decoder.update(encrypted);
-    for i in 0..128 {
-        assert(plaintext[i] == decrypted[i]);
+pub fn main(seed: [u8;32], id: [u8;12], expected: [[u8;16];8]) {
+    let mut encoder = ChaChaEncoder::new(seed);
+    let labels = encoder.get_encodings(id);
+    for i in 0..expected.len() {
+        for j in 0..expected[i].len() {
+            assert_eq(labels[i][j], expected[i][j]);
+        }
     }
 }
 
