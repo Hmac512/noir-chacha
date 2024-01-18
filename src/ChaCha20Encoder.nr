@@ -94,7 +94,6 @@ impl ChaChaEncoder {
     pub fn encode(data:Field, encodings: [[u8;16];8])->[[u8;16];8] {
 
         let mut labels:[[u8;16];8] = [[0;16];8];
-        let delta = 0x0db998f9a99ba25685f440937cdbaf38 as u127;
         let delta1 = 0x0db998f9a99ba256;
         let delta2 = 0x85f440937cdbaf38;
 
